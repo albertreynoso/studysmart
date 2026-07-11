@@ -1,0 +1,92 @@
+{
+  "schema_version": "1.0",
+  "type": "study_package",
+  "theory": {
+    "topic": {
+      "name": "Redes de Computadoras",
+      "description": "Fundamentos de redes: modelos, protocolos y direccionamiento.",
+      "subtopics": [
+        {
+          "name": "Modelo OSI",
+          "description": "Las 7 capas del modelo OSI y sus funciones.",
+          "content_html": "<p>El modelo OSI divide la comunicación en 7 capas...</p>",
+          "sections": [
+            {
+              "name": "Capas inferiores",
+              "content_html": "<p>Física, Enlace de datos y Red...</p>"
+            }
+          ]
+        },
+        {
+          "name": "Protocolo TCP/IP",
+          "description": "Suite de protocolos de Internet.",
+          "content_html": "<p>TCP/IP es el conjunto de protocolos base de Internet...</p>"
+        }
+      ]
+    }
+  },
+  "questions": {
+    "topic": "Redes de Computadoras",
+    "items": [
+      {
+        "type": "multiple_choice",
+        "subtopic": "Modelo OSI",
+        "section": "Capas inferiores",
+        "question": "¿Qué capa del modelo OSI se encarga del enrutamiento de paquetes entre redes?",
+        "image": null,
+        "image_width": null,
+        "options": [
+          { "id": "a", "text": "Capa de Red" },
+          { "id": "b", "text": "Capa de Transporte" },
+          { "id": "c", "text": "Capa de Enlace de datos" },
+          { "id": "d", "text": "Capa de Sesión" }
+        ],
+        "correct": ["a"],
+        "explanation": "La capa de Red (capa 3) es responsable del direccionamiento lógico y el enrutamiento de paquetes entre redes distintas."
+      },
+      {
+        "type": "multiple_response",
+        "subtopic": "Protocolo TCP/IP",
+        "section": null,
+        "question": "Seleccione TODOS los protocolos que operan en la capa de aplicación del modelo TCP/IP.",
+        "image": null,
+        "image_width": null,
+        "options": [
+          { "id": "a", "text": "HTTP" },
+          { "id": "b", "text": "TCP" },
+          { "id": "c", "text": "DNS" },
+          { "id": "d", "text": "IP" },
+          { "id": "e", "text": "SMTP" },
+          { "id": "f", "text": "ARP" }
+        ],
+        "correct": ["a", "c", "e"],
+        "explanation": "HTTP, DNS y SMTP son protocolos de aplicación. TCP es de transporte; IP y ARP operan en capas inferiores."
+      },
+      {
+        "type": "matching",
+        "subtopic": "Modelo OSI",
+        "section": null,
+        "question": "Relacione cada capa del modelo OSI con su función principal.",
+        "image": "https://example.com/diagrama-osi.png",
+        "image_width": 480,
+        "left": [
+          { "id": "l1", "text": "Capa Física" },
+          { "id": "l2", "text": "Capa de Transporte" },
+          { "id": "l3", "text": "Capa de Presentación" }
+        ],
+        "right": [
+          { "id": "r1", "text": "Transmisión de bits por el medio" },
+          { "id": "r2", "text": "Entrega extremo a extremo y control de flujo" },
+          { "id": "r3", "text": "Cifrado y formato de datos" },
+          { "id": "r4", "text": "Enrutamiento de paquetes (distractor)" }
+        ],
+        "correct_pairs": [
+          { "left": "l1", "right": "r1" },
+          { "left": "l2", "right": "r2" },
+          { "left": "l3", "right": "r3" }
+        ],
+        "explanation": "Física transmite bits; Transporte garantiza entrega extremo a extremo; Presentación maneja cifrado y formato. El enrutamiento corresponde a la capa de Red (no listada a la izquierda)."
+      }
+    ]
+  }
+}

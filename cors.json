@@ -1,0 +1,7 @@
+[
+  {
+    "origin": ["http://localhost:5174", "https://trackit-e6792.web.app"],
+    "method": ["GET", "PUT", "POST", "DELETE", "HEAD"],
+    "maxAgeSeconds": 3600
+  }
+]
