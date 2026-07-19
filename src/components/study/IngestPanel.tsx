@@ -13,7 +13,8 @@ type InputMode = 'file' | 'paste';
 
 type IngestState =
   | { kind: 'idle' }
-  | { kind: 'parsing' | 'uploading' }
+  | { kind: 'parsing' }
+  | { kind: 'uploading'; progress: number }
   | { kind: 'success'; response: IngestResponse }
   | { kind: 'error'; status: number; errors: Array<{ path?: string; message: string }> };
 
@@ -39,9 +40,9 @@ export function IngestPanel({ onIngested }: IngestPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const submitPayload = async (payload: unknown) => {
-    setState({ kind: 'uploading' });
+    setState({ kind: 'uploading', progress: 0 });
     try {
-      const response = await ingest(payload);
+      const response = await ingest(payload, pct => setState({ kind: 'uploading', progress: pct }));
       setState({ kind: 'success', response });
       onIngested(response);
     } catch (err) {
@@ -89,6 +90,8 @@ export function IngestPanel({ onIngested }: IngestPanelProps) {
   };
 
   const isLoading = state.kind === 'parsing' || state.kind === 'uploading';
+
+  if (isLoading) return <LoadingScreen state={state} />;
 
   return (
     <div className="p-4 flex flex-col gap-3">
@@ -164,17 +167,30 @@ export function IngestPanel({ onIngested }: IngestPanelProps) {
 }
 
 function IngestStatus({ state }: { state: IngestState }) {
-  if (state.kind === 'idle') return null;
-  if (state.kind === 'parsing' || state.kind === 'uploading') {
-    return (
-      <div className="text-sm text-text-muted">
-        {state.kind === 'parsing' ? 'Leyendo JSON…' : 'Subiendo y procesando…'}
-      </div>
-    );
-  }
   if (state.kind === 'success') return <SuccessSummary response={state.response} />;
   if (state.kind === 'error') return <ErrorList status={state.status} errors={state.errors} />;
   return null;
+}
+
+// Pantalla de carga: barra indeterminada al leer, porcentaje real al subir a Storage.
+function LoadingScreen({ state }: { state: IngestState }) {
+  const uploading = state.kind === 'uploading';
+  const pct = uploading ? state.progress : 0;
+  return (
+    <div className="p-4 flex flex-col items-center justify-center gap-4 min-h-[16rem]">
+      <UploadCloud className="w-10 h-10 text-primary animate-pulse" />
+      <div className="text-center">
+        <p className="text-sm font-medium text-text">{uploading ? 'Subiendo paquete…' : 'Leyendo JSON…'}</p>
+        <p className="text-xs text-text-muted mt-1 tabular-nums">{uploading ? `${pct}%` : 'Preparando…'}</p>
+      </div>
+      <div className="w-full max-w-xs h-2 rounded-full bg-surface border border-border overflow-hidden">
+        <div
+          className={`h-full bg-primary rounded-full transition-all duration-200 ${uploading ? '' : 'w-1/3 animate-pulse'}`}
+          style={uploading ? { width: `${pct}%` } : undefined}
+        />
+      </div>
+    </div>
+  );
 }
 
 function SuccessSummary({ response }: { response: IngestResponse }) {

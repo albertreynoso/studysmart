@@ -49,14 +49,24 @@ export function BankView() {
   const [isFoldersOpen, setIsFoldersOpen] = useState(false);
   const [isMovingFolders, setIsMovingFolders] = useState(false);
   const [isHome, setIsHome] = useState(true);
+  const [isLoadingList, setIsLoadingList] = useState(true);
   const [activeFolder, setActiveFolder] = useState<string | null>(null);
   const isMobile = useIsMobile();
+
+  const bootstrapped = useRef(false);
+  const applyPathRef = useRef<(pathname: string) => void>(() => {});
 
   // Live: índice compartido entre todos los usuarios. refreshPackages queda para awaits imperativos.
   useEffect(() => subscribePackages(
     list => {
       setPackages(list);
+      setIsLoadingList(false);
       if (list.length === 0) { setIsHome(false); setLeftMode('ingest'); }
+      // Ruteo inicial: al primer snapshot ya podemos desambiguar carpeta vs slug suelto.
+      if (!bootstrapped.current) {
+        bootstrapped.current = true;
+        if (list.length > 0) applyPath(window.location.pathname, list);
+      }
     },
     err => setLoadError(err.message),
   ), []);
@@ -228,10 +238,31 @@ export function BankView() {
     }
   };
 
+  // Rename inline desde la tarjeta. La suscripción live refresca la lista al escribir.
+  const renamePackage = async (slug: string, title: string) => {
+    const next = title.trim();
+    const current = packages.find(p => p.slug === slug);
+    if (!next || !current || next === current.topic_name) return;
+    try {
+      await updatePackageMeta(slug, { topic_name: next });
+    } catch (err) {
+      console.error('Error renombrando paquete:', err);
+    }
+  };
+
   const slugsInFolder = (name: string) => packages.filter(p => p.folder === name).map(p => p.slug);
 
   const handleRenameFolder = (oldName: string, nextName: string) => movePackagesToFolder(slugsInFolder(oldName), nextName);
   const handleDeleteFolder = (name: string) => movePackagesToFolder(slugsInFolder(name), null);
+
+  // Rename inline de la carpeta abierta desde el header. Actualiza activeFolder
+  // tras mover los paquetes: si no, FolderScreen filtra por el nombre viejo → vacío.
+  const renameActiveFolder = async (title: string) => {
+    const next = title.trim();
+    if (!activeFolder || !next || next === activeFolder) return;
+    await handleRenameFolder(activeFolder, next);
+    setActiveFolder(next);
+  };
 
   const handleSaveNode = useCallback(async (externalId: string, contentHtml: string) => {
     if (!activeSlug) return;
@@ -243,6 +274,38 @@ export function BankView() {
     }
   }, [activeSlug]);
 
+  // URL → estado (ruteo inicial y botones atrás/adelante del navegador).
+  const applyPath = (pathname: string, pkgs: PackageIndex[]) => {
+    const { folder, slug } = parsePath(pkgs, pathname);
+    if (slug) {
+      setActiveFolder(folder);
+      openPackage(slug);
+      return;
+    }
+    resetViews();
+    setActiveSlug(null);
+    setActivePackage(null);
+    setIsEditingMeta(false);
+    setIsHome(true);
+    setActiveFolder(folder);
+  };
+  applyPathRef.current = (pathname: string) => applyPath(pathname, packages);
+
+  // Estado → URL: refleja carpeta/banco abierto. Vistas no direccionables no tocan la URL.
+  useEffect(() => {
+    if (!bootstrapped.current) return;
+    const path = pathFor(packages, isHome, activeFolder, activeSlug);
+    if (path && path !== window.location.pathname) {
+      window.history.pushState(null, '', path);
+    }
+  }, [packages, isHome, activeFolder, activeSlug]);
+
+  useEffect(() => {
+    const onPop = () => applyPathRef.current(window.location.pathname);
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
   return (
     <div className="flex flex-col h-full min-h-0 bg-background text-text">
       <BankHeader
@@ -250,6 +313,8 @@ export function BankView() {
         activeFolder={activeFolder}
         onBack={headerBack}
         activeName={packages.find(p => p.slug === activeSlug)?.topic_name}
+        onRenameActive={activeSlug ? (title: string) => void renamePackage(activeSlug, title) : undefined}
+        onRenameFolder={activeFolder ? (title: string) => void renameActiveFolder(title) : undefined}
         onOpenIngest={() => { resetViews(); setIsHome(false); setLeftMode('ingest'); }}
         onTakeTest={handleOpenTestPicker}
         onShowHistorial={() => { resetViews(); setIsHome(false); setLeftMode('tree'); setIsHistorial(true); }}
@@ -319,7 +384,12 @@ export function BankView() {
           {loadError && (
             <div className="px-4 py-2 text-sm text-red-500 border-b border-border shrink-0">{loadError}</div>
           )}
-          {isHome && activeFolder ? (
+          {isHome && isLoadingList ? (
+            <div className="flex-1 flex items-center justify-center text-text-muted gap-2 text-sm">
+              <RefreshCw className="w-5 h-5 animate-spin" />
+              Cargando paquetes…
+            </div>
+          ) : isHome && activeFolder ? (
             <FolderScreen packages={packages} folder={activeFolder} onOpen={openPackage} />
           ) : isHome ? (
             <HomeScreen packages={packages} onOpen={openPackage} onOpenFolder={setActiveFolder} />
@@ -375,6 +445,26 @@ export function BankView() {
   );
 }
 
+// Parsea /carpeta/slug o /slug. Un segmento suelto es slug si existe en el índice, si no carpeta.
+function parsePath(pkgs: PackageIndex[], pathname: string): { folder: string | null; slug: string | null } {
+  const parts = pathname.split('/').filter(Boolean).map(decodeURIComponent);
+  if (parts.length === 0) return { folder: null, slug: null };
+  if (parts.length >= 2) return { folder: parts[0], slug: parts[1] };
+  const seg = parts[0];
+  if (pkgs.some(p => p.slug === seg)) return { folder: null, slug: seg };
+  return { folder: seg, slug: null };
+}
+
+// URL canónica del estado. La carpeta del banco sale del índice (autoritativa). null = no direccionable.
+function pathFor(pkgs: PackageIndex[], isHome: boolean, activeFolder: string | null, activeSlug: string | null): string | null {
+  if (activeSlug) {
+    const pkg = pkgs.find(p => p.slug === activeSlug);
+    return pkg?.folder ? `/${encodeURIComponent(pkg.folder)}/${activeSlug}` : `/${activeSlug}`;
+  }
+  if (isHome) return activeFolder ? `/${encodeURIComponent(activeFolder)}` : '/';
+  return null;
+}
+
 function resolveSelectedContent(pkg: StudyPackage | null, selected: SelectedNode | null): string {
   if (!pkg || !selected) return '';
   const topic = pkg.theory.topic;
@@ -422,6 +512,8 @@ interface BankHeaderProps {
   activeFolder: string | null;
   onBack: () => void;
   activeName?: string;
+  onRenameActive?: (title: string) => void;
+  onRenameFolder?: (title: string) => void;
   onOpenIngest: () => void;
   onTakeTest: () => void;
   onShowHistorial: () => void;
@@ -434,9 +526,11 @@ interface BankHeaderProps {
   onDelete?: () => void;
 }
 
-function BankHeader({ isHome, activeFolder, onBack, activeName, onOpenIngest, onTakeTest, onShowHistorial, onOpenTemario, onOpenFolders, onEditQuestions, isEditing, onOpenMeta, onExport, onDelete }: BankHeaderProps) {
+function BankHeader({ isHome, activeFolder, onBack, activeName, onRenameActive, onRenameFolder, onOpenIngest, onTakeTest, onShowHistorial, onOpenTemario, onOpenFolders, onEditQuestions, isEditing, onOpenMeta, onExport, onDelete }: BankHeaderProps) {
   const showBack = !isHome || !!activeFolder;
   const crumb = !isHome ? activeName : activeFolder;
+  const editablePackage = !isHome && !!activeName && !!onRenameActive;
+  const editableFolder = isHome && !!activeFolder && !!onRenameFolder;
   return (
     <header className="h-14 px-4 flex items-center gap-2 border-b border-border shrink-0 bg-surface">
       {showBack ? (
@@ -448,7 +542,11 @@ function BankHeader({ isHome, activeFolder, onBack, activeName, onOpenIngest, on
             <ArrowLeft className="w-4 h-4" />
             Volver
           </button>
-          {crumb && (
+          {editablePackage ? (
+            <EditableCrumb name={activeName!} onRename={onRenameActive!} />
+          ) : editableFolder ? (
+            <EditableCrumb name={activeFolder!} onRename={onRenameFolder!} icon={<Folders className="w-4 h-4 text-primary shrink-0" />} />
+          ) : crumb && (
             <span className="flex items-center gap-1.5 text-sm font-semibold text-text truncate max-w-[220px]">
               {isHome && activeFolder && <Folders className="w-4 h-4 text-primary shrink-0" />}
               {crumb}
@@ -478,6 +576,46 @@ function BankHeader({ isHome, activeFolder, onBack, activeName, onOpenIngest, on
         Tomar test
       </button>
     </header>
+  );
+}
+
+// Nombre del paquete abierto, editable in-place. Guarda en blur/Enter (renamePackage).
+function EditableCrumb({ name, onRename, icon }: { name: string; onRename: (title: string) => void; icon?: React.ReactNode }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(name);
+
+  const commit = () => {
+    setEditing(false);
+    const next = draft.trim();
+    if (next && next !== name) onRename(next);
+    else setDraft(name);
+  };
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e => {
+          if (e.key === 'Enter') commit();
+          if (e.key === 'Escape') { setDraft(name); setEditing(false); }
+        }}
+        className="w-[840px] min-w-0 text-sm font-semibold bg-background border border-primary rounded px-2 py-1 max-w-[840px] focus:outline-none focus:ring-2 focus:ring-primary"
+      />
+    );
+  }
+
+  return (
+    <button
+      onClick={() => { setDraft(name); setEditing(true); }}
+      title="Clic para renombrar"
+      className="flex items-center gap-1.5 text-sm font-semibold text-text truncate max-w-[840px] cursor-text hover:underline decoration-dotted"
+    >
+      {icon}
+      {name}
+    </button>
   );
 }
 

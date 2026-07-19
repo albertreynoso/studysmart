@@ -2,7 +2,7 @@
 // cuerpo JSON + imágenes en Storage (`packages/<slug>.json`, `packages/<slug>/images/*`).
 // Reemplaza study.ts (parte de paquetes). Firestore/Storage compartidos con Trackit (trackit-e6792).
 import { collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, setDoc } from "firebase/firestore";
-import { deleteObject, getBytes, getDownloadURL, listAll, ref, uploadBytes, uploadString } from "firebase/storage";
+import { deleteObject, getBytes, getDownloadURL, listAll, ref, uploadBytes, uploadBytesResumable } from "firebase/storage";
 import { db, storage } from "./firebase";
 import type {
   PackageIndex,
@@ -74,17 +74,25 @@ export function subscribePackageBody(
 }
 
 // Sube solo el cuerpo JSON a Storage (edición de nodos/preguntas, no toca el índice).
-async function putBody(slug: string, body: StudyPackage): Promise<void> {
-  await uploadString(ref(fst(), bodyPath(slug)), JSON.stringify(body, null, 2), "raw", {
-    contentType: "application/json",
+// onProgress(0-100) opcional: uploadBytesResumable emite bytes transferidos para la UI de subida.
+async function putBody(slug: string, body: StudyPackage, onProgress?: (pct: number) => void): Promise<void> {
+  const bytes = new TextEncoder().encode(JSON.stringify(body, null, 2));
+  const task = uploadBytesResumable(ref(fst(), bodyPath(slug)), bytes, { contentType: "application/json" });
+  await new Promise<void>((resolve, reject) => {
+    task.on(
+      "state_changed",
+      (snap) => onProgress?.(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
+      reject,
+      resolve,
+    );
   });
   // Bump del índice: Storage no tiene realtime, así los suscriptores detectan el cambio.
   await setDoc(doc(fdb(), INDEX, slug), { last_modified: new Date().toISOString() }, { merge: true });
 }
 
 // Escribe cuerpo en Storage + upserta el doc índice. Usado por ingesta.
-export async function savePackage(index: PackageIndex, body: StudyPackage): Promise<void> {
-  await putBody(index.slug, body);
+export async function savePackage(index: PackageIndex, body: StudyPackage, onProgress?: (pct: number) => void): Promise<void> {
+  await putBody(index.slug, body, onProgress);
   await setDoc(doc(fdb(), INDEX, index.slug), { ...index, last_modified: new Date().toISOString() });
 }
 

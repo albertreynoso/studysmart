@@ -32,6 +32,23 @@ interface UserAnswer {
   questionId: string;
   selectedOptionIds: string[];
   isCorrect: boolean;
+  score: number; // 0..1: fracción de aciertos (parcial en multi/matching)
+}
+
+const fmtScore = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+
+// Aciertos de una pregunta multi-parte (multi_response/matching). null si es de una sola respuesta.
+function partialTally(q: StudyQuestion, a?: UserAnswer): { hits: number; total: number } | null {
+  if (q.type === 'matching') {
+    const pairs = q.correct_pairs ?? [];
+    const sel = new Map((a?.selectedOptionIds ?? []).map(s => s.split(':') as [string, string]));
+    return { hits: pairs.filter(p => sel.get(p.left) === p.right).length, total: pairs.length };
+  }
+  const isMulti = q.type === 'multiple_response' || q.correct.length > 1;
+  if (!isMulti) return null;
+  const correctSet = new Set(q.correct);
+  const hits = (a?.selectedOptionIds ?? []).filter(id => correctSet.has(id)).length;
+  return { hits, total: q.correct.length };
 }
 
 export function TestView({ questions, topicName, immediateFeedback, onClose, onReconfigure, onSessionSaved }: TestViewProps) {
@@ -42,10 +59,11 @@ export function TestView({ questions, topicName, immediateFeedback, onClose, onR
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [matchAssignments, setMatchAssignments] = useState<Record<string, string>>({});
   const [hasSubmittedAnswer, setHasSubmittedAnswer] = useState(false);
-  const [startTime] = useState<number>(() => Date.now());
+  const [startTime, setStartTime] = useState<number>(() => Date.now());
   const [timeSpentSeconds, setTimeSpentSeconds] = useState(0);
   const [liveElapsed, setLiveElapsed] = useState(0);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+  const [showRetryConfirm, setShowRetryConfirm] = useState(false);
 
   useEffect(() => {
     if (!lightboxSrc) return;
@@ -73,6 +91,12 @@ export function TestView({ questions, topicName, immediateFeedback, onClose, onR
     ? matchingLeft.length > 0 && matchingLeft.every(item => matchAssignments[item.id])
     : selectedOptions.length > 0;
 
+  const currentAnswer = currentQuestion ? answers[currentQuestion.external_id] : undefined;
+  const currentTally = hasSubmittedAnswer && currentQuestion ? partialTally(currentQuestion, currentAnswer) : null;
+  const currentVerdict: 'correct' | 'partial' | 'wrong' = currentAnswer?.isCorrect
+    ? 'correct'
+    : (currentAnswer?.score ?? 0) > 0 ? 'partial' : 'wrong';
+
   const handleOptionToggle = (optionId: string) => {
     if (hasSubmittedAnswer) return;
 
@@ -95,24 +119,26 @@ export function TestView({ questions, topicName, immediateFeedback, onClose, onR
   // selected se serializa como "leftId:rightId" para reusar SessionAnswer.selected.
   const evaluateMatching = () => {
     const pairs = currentQuestion.correct_pairs ?? [];
-    const isCorrect = pairs.length > 0 && pairs.every(p => matchAssignments[p.left] === p.right);
+    const hits = pairs.filter(p => matchAssignments[p.left] === p.right).length;
+    const score = pairs.length === 0 ? 0 : hits / pairs.length;
     const selected = matchingLeft.map(item => `${item.id}:${matchAssignments[item.id] ?? ''}`);
-    return { isCorrect, selected };
+    return { isCorrect: score === 1, score, selected };
   };
 
   const evaluateChoice = () => {
     const correctSet = new Set(currentQuestion.correct);
     const selectedSet = new Set(selectedOptions);
-    const isCorrect =
-      correctSet.size === selectedSet.size &&
-      [...correctSet].every(id => selectedSet.has(id));
-    return { isCorrect, selected: selectedOptions };
+    const hits = [...selectedSet].filter(id => correctSet.has(id)).length;
+    const wrong = selectedSet.size - hits;
+    // ponytail: penaliza sobre-selección; sin ello, marcar todo daría 100%. Clamp a [0,1].
+    const score = correctSet.size === 0 ? 0 : Math.max(0, (hits - wrong) / correctSet.size);
+    return { isCorrect: score === 1, score, selected: selectedOptions };
   };
 
   const handleSubmitAnswer = () => {
     if (!canSubmit || hasSubmittedAnswer) return;
 
-    const { isCorrect, selected } = isMatching ? evaluateMatching() : evaluateChoice();
+    const { isCorrect, score, selected } = isMatching ? evaluateMatching() : evaluateChoice();
 
     const updatedAnswers: Record<string, UserAnswer> = {
       ...answers,
@@ -120,6 +146,7 @@ export function TestView({ questions, topicName, immediateFeedback, onClose, onR
         questionId: currentQuestion.external_id,
         selectedOptionIds: selected,
         isCorrect,
+        score,
       },
     };
 
@@ -136,13 +163,13 @@ export function TestView({ questions, topicName, immediateFeedback, onClose, onR
   const persistSession = async (finalAnswers: Record<string, UserAnswer>, elapsed: number) => {
     const slugs = [...new Set(testQuestions.map(q => q.package_slug).filter(Boolean) as string[])];
     const primarySlug = slugs[0] ?? 'unknown';
-    const correctCount = Object.values(finalAnswers).filter(a => a.isCorrect).length;
+    const correctCount = Object.values(finalAnswers).reduce((sum, a) => sum + a.score, 0);
     const payload: SessionPayload = {
       package_slug: primarySlug,
       package_slugs: slugs.length ? slugs : [primarySlug],
       topic_label: topicName,
       question_count: testQuestions.length,
-      correct_count: correctCount,
+      correct_count: Math.round(correctCount * 10) / 10,
       score_pct: testQuestions.length ? Math.round((correctCount / testQuestions.length) * 100) : 0,
       time_seconds: elapsed,
       answers: testQuestions.map(q => ({
@@ -151,6 +178,7 @@ export function TestView({ questions, topicName, immediateFeedback, onClose, onR
         question_text: q.question,
         selected: finalAnswers[q.external_id]?.selectedOptionIds ?? [],
         is_correct: finalAnswers[q.external_id]?.isCorrect ?? false,
+        score: finalAnswers[q.external_id]?.score ?? 0,
       })),
     };
     try {
@@ -176,8 +204,21 @@ export function TestView({ questions, topicName, immediateFeedback, onClose, onR
     }
   };
 
+  const handleRetry = () => {
+    setShowRetryConfirm(false);
+    setAnswers({});
+    setSelectedOptions([]);
+    setMatchAssignments({});
+    setHasSubmittedAnswer(false);
+    setCurrentIdx(0);
+    setTimeSpentSeconds(0);
+    setLiveElapsed(0);
+    setStartTime(Date.now());
+    setState('running');
+  };
+
   const correctAnswersCount = useMemo(() => {
-    return Object.values(answers).filter(a => a.isCorrect).length;
+    return Object.values(answers).reduce((sum, a) => sum + a.score, 0);
   }, [answers]);
 
   const scorePercentage = useMemo(() => {
@@ -233,7 +274,50 @@ export function TestView({ questions, topicName, immediateFeedback, onClose, onR
             </div>
           </div>
         )}
+        {state === 'results' && testQuestions.length > 0 && (
+          <button
+            onClick={() => setShowRetryConfirm(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-lg hover:opacity-90 transition-all"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Reintentar
+          </button>
+        )}
       </div>
+
+      {showRetryConfirm && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-6"
+          onClick={() => setShowRetryConfirm(false)}
+        >
+          <div
+            className="bg-surface border border-border rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2.5">
+              <RotateCcw className="w-5 h-5 text-primary shrink-0" />
+              <h3 className="text-base font-bold text-text">Reintentar test</h3>
+            </div>
+            <p className="text-sm text-text-muted">
+              Se reiniciará <span className="font-semibold text-text">{topicName}</span> con las mismas preguntas. Tu resultado actual ya quedó guardado.
+            </p>
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <button
+                onClick={() => setShowRetryConfirm(false)}
+                className="py-2.5 bg-surface border border-border text-text-muted hover:text-text hover:bg-surface-hover text-xs font-semibold rounded-xl transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleRetry}
+                className="py-2.5 bg-primary text-primary-foreground hover:opacity-90 text-xs font-semibold rounded-xl transition-all"
+              >
+                Reintentar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {testQuestions.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-surface border border-border rounded-xl">
@@ -375,7 +459,10 @@ export function TestView({ questions, topicName, immediateFeedback, onClose, onR
                       <span>{option.text}</span>
                     </div>
                     <div className="shrink-0">
-                      {showSuccess && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
+                      {showSuccess && isSelected && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
+                      {showSuccess && !isSelected && (
+                        <span className="text-[10px] font-bold text-emerald-600 uppercase">Faltó</span>
+                      )}
                       {showFailure && <XCircle className="w-5 h-5 text-red-500" />}
                     </div>
                   </button>
@@ -397,21 +484,34 @@ export function TestView({ questions, topicName, immediateFeedback, onClose, onR
               <div className="space-y-4 pt-4 border-t border-border/40 animate-in slide-in-from-bottom-2 duration-200">
                 <div
                   className={`p-4 rounded-xl flex gap-3 ${
-                    answers[currentQuestion.external_id]?.isCorrect
+                    currentVerdict === 'correct'
                       ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300'
+                      : currentVerdict === 'partial'
+                      ? 'bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300'
                       : 'bg-red-500/10 border border-red-500/20 text-red-800 dark:text-red-300'
                   }`}
                 >
                   <div className="shrink-0 mt-0.5">
-                    {answers[currentQuestion.external_id]?.isCorrect ? (
+                    {currentVerdict === 'correct' ? (
                       <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                    ) : currentVerdict === 'partial' ? (
+                      <CheckCircle2 className="w-5 h-5 text-amber-500" />
                     ) : (
                       <XCircle className="w-5 h-5 text-red-500" />
                     )}
                   </div>
                   <div className="space-y-1">
                     <p className="text-xs font-bold">
-                      {answers[currentQuestion.external_id]?.isCorrect ? '¡Respuesta Correcta!' : 'Respuesta Incorrecta'}
+                      {currentVerdict === 'correct'
+                        ? '¡Respuesta Correcta!'
+                        : currentVerdict === 'partial'
+                        ? 'Respuesta Parcial'
+                        : 'Respuesta Incorrecta'}
+                      {currentTally && (
+                        <span className="ml-1.5 font-semibold opacity-80">
+                          · {currentTally.hits} de {currentTally.total} aciertos
+                        </span>
+                      )}
                     </p>
                     <p className="text-[11px] leading-relaxed opacity-90">
                       {currentQuestion.explanation}
@@ -493,6 +593,10 @@ export function TestView({ questions, topicName, immediateFeedback, onClose, onR
             <div className="space-y-3.5">
               {testQuestions.map((question, i) => {
                 const answer = answers[question.external_id];
+                const tally = partialTally(question, answer);
+                const verdict: 'correct' | 'partial' | 'wrong' = answer?.isCorrect
+                  ? 'correct'
+                  : (answer?.score ?? 0) > 0 ? 'partial' : 'wrong';
                 return (
                   <div
                     key={question.external_id}
@@ -505,15 +609,22 @@ export function TestView({ questions, topicName, immediateFeedback, onClose, onR
                       </div>
                       <span
                         className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                          answer?.isCorrect
+                          verdict === 'correct'
                             ? 'bg-emerald-500/10 text-emerald-600'
+                            : verdict === 'partial'
+                            ? 'bg-amber-500/10 text-amber-600'
                             : 'bg-red-500/10 text-red-600'
                         }`}
                       >
-                        {answer?.isCorrect ? (
+                        {verdict === 'correct' ? (
                           <>
                             <CheckCircle2 className="w-3 h-3" />
                             Correcta
+                          </>
+                        ) : verdict === 'partial' ? (
+                          <>
+                            <CheckCircle2 className="w-3 h-3" />
+                            Parcial{tally ? ` ${tally.hits}/${tally.total}` : ''}
                           </>
                         ) : (
                           <>
@@ -560,6 +671,12 @@ export function TestView({ questions, topicName, immediateFeedback, onClose, onR
                             </span>
                             <span>{opt.text}</span>
                             {isCorrect && <span className="text-[9px] bg-emerald-500/10 px-1 rounded">Correcta</span>}
+                            {isCorrect && wasSelected && (
+                              <span className="text-[9px] bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-1 rounded font-bold">Acertada</span>
+                            )}
+                            {isCorrect && !wasSelected && (
+                              <span className="text-[9px] bg-amber-500/10 text-amber-600 px-1 rounded">No elegida</span>
+                            )}
                             {wasSelected && !isCorrect && (
                               <span className="text-[9px] bg-red-500/10 px-1 rounded">Elegida</span>
                             )}

@@ -74,7 +74,7 @@ function pkgScores(answers: SessionAnswer[]): Record<string, number> {
   for (const a of answers) {
     const t = (tally[a.package_slug] ??= [0, 0]);
     t[1] += 1;
-    if (a.is_correct) t[0] += 1;
+    t[0] += a.score ?? (a.is_correct ? 1 : 0); // score ausente en sesiones viejas
   }
   return Object.fromEntries(
     Object.entries(tally).map(([slug, [ok, n]]) => [slug, n ? Math.round((ok / n) * 100) : 0]),

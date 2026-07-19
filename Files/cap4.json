@@ -1,0 +1,581 @@
+{
+    "schema_version": "1.0",
+    "type": "study_package",
+    "theory": {
+      "topic": {
+        "name": "AWS Cloud Practitioner – Capítulo 4: Economía de la Nube, Frameworks y Migración",
+        "description": "Fundamentos económicos de la nube (CapEx/OpEx, TCO, licenciamiento), estrategias de optimización (Rightsizing, Automatización), los frameworks Well-Architected y Cloud Adoption, las estrategias de migración (6 Rs) y la transferencia física de datos con Snow Family.",
+        "subtopics": [
+          {
+            "name": "On-Premises vs. Cloud Computing",
+            "description": "Comparación entre operar infraestructura propia y usar AWS.",
+            "content_html": "<p><strong>On-Premises</strong> implica infraestructura propia con control total del hardware, mientras que <strong>Cloud (AWS)</strong> ofrece un modelo de pago por uso con escalado bajo demanda.</p><ul><li><strong>Usar On-Premises</strong> cuando: hay requisitos de cumplimiento que exigen control físico total, los costos son predecibles a largo plazo, o existe capital disponible para inversión inicial.</li><li><strong>Usar Cloud</strong> cuando: la demanda es variable o impredecible, se necesita agilidad y escalado rápido, o se prefiere el modelo OpEx (pago por uso).</li></ul><p>El criterio de decisión principal se basa en el <strong>modelo financiero (CapEx vs. OpEx)</strong> y la <strong>necesidad de agilidad</strong>.</p><p><em>Distractor común:</em> pensar que el único beneficio de la nube es el ahorro de costos; la agilidad y escalabilidad suelen ser el factor decisivo.</p>"
+          },
+          {
+            "name": "TCO (Total Cost of Ownership)",
+            "description": "Costo total de poseer y operar infraestructura de TI.",
+            "content_html": "<p><strong>TCO</strong> es el costo total de poseer, operar y dar soporte a una infraestructura de TI durante su vida útil: hardware, electricidad, refrigeración, personal, mantenimiento y licencias.</p><p>Permite comparar de forma justa el costo real de on-premises frente a la nube, evitando decisiones basadas solo en el precio de compra inicial.</p><p><em>No confundir</em> con el \"precio de lista\" de un servicio; el TCO incluye todos los costos asociados.</p>"
+          },
+          {
+            "name": "CapEx vs. OpEx",
+            "description": "Modelos financieros de inversión de capital frente a gasto operativo.",
+            "content_html": "<p><strong>CapEx</strong>: inversión inicial en activos fijos, propiedad del hardware, típico de on-premises.</p><p><strong>OpEx</strong>: pago por consumo, sin gran inversión inicial, típico del modelo cloud.</p><p>Regla clave: <strong>On-premises = CapEx</strong>, <strong>Cloud = OpEx</strong>.</p><p><em>Distractor:</em> el pago anticipado de una instancia reservada sigue siendo OpEx, porque no otorga propiedad de un activo físico.</p>"
+          },
+          {
+            "name": "BYOL vs. AWS License Included",
+            "description": "Estrategias de licenciamiento de software en AWS.",
+            "content_html": "<p><strong>BYOL</strong>: usar licencias propias (Windows, SQL Server, Oracle) en AWS. Ideal si ya tienes licencias, cargas estables a largo plazo, y quieres mantener cumplimiento con contratos existentes.</p><p><strong>AWS License Included</strong>: pagar la licencia como parte del precio por hora. Ideal para cargas temporales o de prueba, sin licencias propias, priorizando simplicidad.</p><p>Criterio de decisión: <strong>costo a largo plazo</strong> (BYOL) vs. <strong>simplicidad/agilidad</strong> (License Included).</p><p><em>Distractor:</em> el cumplimiento de licencias en BYOL es responsabilidad del <strong>cliente</strong>, no de AWS.</p>"
+          },
+          {
+            "name": "Rightsizing",
+            "description": "Ajuste continuo del tamaño de instancias a la demanda real.",
+            "content_html": "<p><strong>Rightsizing</strong> es el proceso continuo de ajustar el tamaño de instancias EC2/RDS a la demanda real, analizando datos históricos de uso (14-93 días) para detectar sobre- o sub-provisionamiento.</p><p>Objetivo: optimizar costos y mantener el rendimiento, eliminando el pago por capacidad no utilizada.</p><p>Responsabilidad del <strong>cliente</strong>; AWS provee datos y recomendaciones mediante <strong>AWS Compute Optimizer</strong> y <strong>AWS Cost Explorer</strong>.</p>"
+          },
+          {
+            "name": "Automation",
+            "description": "Codificación de tareas repetitivas para ejecutarlas sin intervención humana.",
+            "content_html": "<p><strong>Automatización</strong>: codificar tareas repetitivas (aprovisionamiento, parches, configuración) para ejecutarlas sin intervención humana.</p><p>Beneficios: reduce esfuerzo manual, acelera procesos, aumenta consistencia (menos errores humanos) y mejora seguridad/cumplimiento.</p><p>Herramientas: <strong>AWS Systems Manager Automation</strong>, <strong>Auto Scaling</strong>, <strong>Elastic Beanstalk</strong>, <strong>Lambda</strong>, <strong>AWS Config</strong>, <strong>CloudTrail</strong>.</p><p>Se conecta con el pilar <strong>Operational Excellence</strong> del Well-Architected Framework.</p>"
+          },
+          {
+            "name": "Scale (Economía de Escala)",
+            "description": "Ventaja de precios que AWS obtiene por su base masiva de clientes.",
+            "content_html": "<p><strong>Economía de escala</strong>: al tener una base masiva de clientes, AWS compra hardware a granel y negocia mejores precios, trasladando el ahorro al cliente final mediante reducciones continuas de precios.</p><p><em>No confundir</em> con \"escalabilidad\" (capacidad de un sistema de manejar más carga); la escala de AWS es lo que permite ofrecer esa escalabilidad a precio accesible.</p>"
+          },
+          {
+            "name": "AWS Well-Architected Framework",
+            "description": "Marco para revisar y mejorar continuamente arquitecturas en la nube mediante 6 pilares.",
+            "content_html": "<p>El <strong>AWS Well-Architected Framework (WAF)</strong> es un marco para revisar y mejorar continuamente arquitecturas en la nube, evaluando diseños contra mejores prácticas en 6 pilares. No aplica cambios automáticamente: el cliente ejecuta las mejoras usando el <strong>AWS Well-Architected Tool</strong>.</p><p>Los 6 pilares son: Operational Excellence, Security, Reliability, Performance Efficiency, Cost Optimization y Sustainability.</p>",
+            "sections": [
+              { "name": "Operational Excellence", "content_html": "<p>Capacidad de ejecutar y monitorizar sistemas para ofrecer valor y mejorar continuamente procesos, tratando las operaciones como \"código\". Ejemplo: realizar \"game days\". Se confunde con DevOps, que es la cultura que ayuda a lograrlo.</p>" },
+              { "name": "Security", "content_html": "<p>Capacidad de proteger información, sistemas y activos mediante evaluación de riesgos y mitigación, siguiendo el modelo de responsabilidad compartida. El cliente es responsable de cifrar datos y gestionar IAM.</p>" },
+              { "name": "Reliability", "content_html": "<p>Capacidad de un sistema de recuperarse de fallos, adquirir recursos dinámicamente y mitigar interrupciones. Se apoya en el uso de múltiples Availability Zones. No confundir con \"Alta Disponibilidad\", que es un objetivo de este pilar.</p>" },
+              { "name": "Performance Efficiency", "content_html": "<p>Uso eficiente de recursos informáticos para cumplir requisitos y mantener esa eficiencia al evolucionar (ej. arquitecturas serverless). Se relaciona con Rightsizing como una táctica.</p>" },
+              { "name": "Cost Optimization", "content_html": "<p>Capacidad de ejecutar sistemas ofreciendo valor al menor precio posible, evitando gastos innecesarios (ej. Savings Plans, Spot Instances). Se confunde con Rightsizing, que es una de sus técnicas.</p>" },
+              { "name": "Sustainability", "content_html": "<p>Capacidad de minimizar el impacto ambiental de las cargas de trabajo, reduciendo recursos inactivos y optimizando el uso de energía.</p>" }
+            ]
+          },
+          {
+            "name": "AWS Cloud Adoption Framework (CAF)",
+            "description": "Marco de preparación organizacional y cultural antes de adoptar AWS.",
+            "content_html": "<p>El <strong>AWS Cloud Adoption Framework (CAF)</strong> prepara a la organización cultural y organizacionalmente antes de adoptar AWS, evaluando 6 perspectivas para identificar brechas en habilidades, procesos y herramientas. Es responsabilidad del <strong>cliente</strong> ejecutarlo; se usa antes o junto con el WAF.</p><p>Diferencia clave: el <strong>CAF</strong> se centra en preparación organizacional y cultural, mientras que el <strong>WAF</strong> se centra en diseño técnico de arquitecturas.</p>",
+            "sections": [
+              { "name": "Business", "content_html": "<p>Alinea la estrategia de nube con los objetivos de negocio. La usan líderes como CEO y CFO.</p>" },
+              { "name": "People", "content_html": "<p>Prepara a los empleados para el cambio mediante formación, liderazgo y gestión del cambio.</p>" },
+              { "name": "Governance", "content_html": "<p>Gestiona riesgo, cumplimiento y control mediante políticas y supervisión.</p>" },
+              { "name": "Platform", "content_html": "<p>Se centra en la arquitectura técnica e ingeniería. La usan arquitectos e ingenieros.</p>" },
+              { "name": "Security", "content_html": "<p>Protege datos y sistemas, integrando seguridad en todas las capas de la organización.</p>" },
+              { "name": "Operations", "content_html": "<p>Gestiona y opera servicios a diario: monitorización, respuesta a incidentes y recuperación ante desastres.</p>" }
+            ]
+          },
+          {
+            "name": "Migration Strategies (The 6 Rs)",
+            "description": "Estrategias para migrar aplicaciones a AWS según esfuerzo y beneficio.",
+            "content_html": "<p>Las <strong>6 Rs</strong> son estrategias para migrar aplicaciones a AWS, cada una con distinto nivel de esfuerzo y beneficio:</p><ul><li><strong>Rehost</strong> (\"lift and shift\"): mover la app sin cambios. Rápido, bajo aprovechamiento de ventajas cloud.</li><li><strong>Replatform</strong>: pequeños cambios (ej. base de datos autogestionada → RDS) sin reescribir.</li><li><strong>Refactor/Re-architect</strong>: rediseñar para arquitectura nativa cloud (microservicios, serverless). Mayor esfuerzo, mayor beneficio.</li><li><strong>Repurchase</strong>: reemplazar por un SaaS (ej. CRM propio → Salesforce).</li><li><strong>Retain</strong>: mantener on-premises por ahora (regulación, dependencias).</li><li><strong>Retire</strong>: apagar aplicaciones que ya no se usan.</li></ul><p>Herramientas asociadas: <strong>AWS Migration Hub</strong>, <strong>AWS Application Discovery Service</strong>, <strong>AWS DMS</strong>, <strong>AWS SMS</strong>.</p>"
+          },
+          {
+            "name": "AWS Snow Family",
+            "description": "Dispositivos físicos para transferir grandes volúmenes de datos hacia/desde AWS.",
+            "content_html": "<p>La <strong>AWS Snow Family</strong> se usa para transferir grandes volúmenes de datos hacia/desde AWS cuando la red es lenta, costosa o no disponible.</p><ul><li><strong>Snowcone</strong>: el más pequeño y portátil, para edge computing e IoT en espacios reducidos.</li><li><strong>Snowball</strong>: transferencia a gran escala (decenas de TB a PB), también soporta cómputo edge.</li><li><strong>Snowmobile</strong>: tráiler para transferencias a escala de exabytes.</li></ul><p>Compite con <strong>AWS Direct Connect</strong> y <strong>VPN</strong>; se elige Snow Family cuando el volumen de datos hace inviable la transferencia por red (tiempo o costo).</p><p>Es un servicio gestionado por AWS: el cliente recibe el dispositivo, carga los datos y lo devuelve para su ingesta.</p>"
+          }
+        ]
+      }
+    },
+    "questions": {
+      "topic": "AWS Cloud Practitioner – Capítulo 4: Economía de la Nube, Frameworks y Migración",
+      "items": [
+        {
+          "type": "multiple_choice",
+          "subtopic": "On-Premises vs. Cloud Computing",
+          "section": null,
+          "question": "¿Cuál es el criterio financiero principal que distingue el modelo on-premises del modelo cloud?",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "CapEx vs. OpEx" },
+            { "id": "b", "text": "Público vs. Privado" },
+            { "id": "c", "text": "SaaS vs. PaaS" },
+            { "id": "d", "text": "Síncrono vs. Asíncrono" }
+          ],
+          "correct": ["a"],
+          "explanation": "La decisión entre on-premises y cloud se basa fundamentalmente en el modelo financiero: CapEx (inversión de capital, on-premises) frente a OpEx (gasto operativo, cloud). Las demás opciones no describen un criterio financiero relevante para esta comparación."
+        },
+        {
+          "type": "multiple_choice",
+          "subtopic": "On-Premises vs. Cloud Computing",
+          "section": null,
+          "question": "Una empresa migra a AWS para reducir su tiempo de comercialización y adaptarse a picos de demanda impredecibles. ¿Cuál es la ventaja más significativa de AWS sobre on-premises en este escenario?",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "Menor costo total a largo plazo" },
+            { "id": "b", "text": "Mayor control sobre la infraestructura física" },
+            { "id": "c", "text": "Escalado elástico y rápido" },
+            { "id": "d", "text": "Eliminación total de parches de seguridad" }
+          ],
+          "correct": ["c"],
+          "explanation": "Ante demanda impredecible y necesidad de agilidad, el escalado elástico es la ventaja decisiva. La opción A es el distractor más tentador: el ahorro de costos no es garantizado ni el factor principal aquí; B es una ventaja de on-premises, no de cloud; D es falso, ya que en el modelo de responsabilidad compartida el cliente sigue gestionando parte de la seguridad."
+        },
+        {
+          "type": "multiple_choice",
+          "subtopic": "TCO (Total Cost of Ownership)",
+          "section": null,
+          "question": "¿Qué término describe el análisis que compara el costo total de un centro de datos propio (servidores, electricidad, personal, licencias) frente a usar AWS?",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "ROI" },
+            { "id": "b", "text": "TCO" },
+            { "id": "c", "text": "Costo de oportunidad" },
+            { "id": "d", "text": "OpEx" }
+          ],
+          "correct": ["b"],
+          "explanation": "El TCO (Total Cost of Ownership) es precisamente el análisis integral de todos los costos de poseer y operar infraestructura. ROI mide retorno de inversión, no costo total; costo de oportunidad y OpEx son conceptos relacionados pero no describen este análisis comparativo específico."
+        },
+        {
+          "type": "multiple_choice",
+          "subtopic": "TCO (Total Cost of Ownership)",
+          "section": null,
+          "question": "¿Qué elemento normalmente NO se incluye al calcular el TCO de una infraestructura on-premises?",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "Electricidad y refrigeración" },
+            { "id": "b", "text": "Licencias de software" },
+            { "id": "c", "text": "Tarifas de egress de datos de AWS" },
+            { "id": "d", "text": "Salarios del personal de TI" }
+          ],
+          "correct": ["c"],
+          "explanation": "Las tarifas de egress son un costo propio del modelo cloud (AWS), no de una infraestructura on-premises. Electricidad, licencias y salarios de TI sí forman parte del TCO on-premises."
+        },
+        {
+          "type": "multiple_choice",
+          "subtopic": "CapEx vs. OpEx",
+          "section": null,
+          "question": "Una empresa compra un servidor físico para su centro de datos. ¿Cómo se clasifica este gasto?",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "OpEx" },
+            { "id": "b", "text": "CapEx" },
+            { "id": "c", "text": "Gasto variable" },
+            { "id": "d", "text": "Gasto por uso" }
+          ],
+          "correct": ["b"],
+          "explanation": "Comprar un servidor físico es una inversión en un activo fijo, lo cual se clasifica como CapEx (gasto de capital). OpEx, gasto variable y gasto por uso describen modelos de pago por consumo, no la compra de un activo."
+        },
+        {
+          "type": "multiple_choice",
+          "subtopic": "CapEx vs. OpEx",
+          "section": null,
+          "question": "Una empresa paga por adelantado una instancia reservada de EC2 por un año. ¿Cómo se clasifica ese pago?",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "CapEx, porque implica un pago anticipado" },
+            { "id": "b", "text": "OpEx, porque no otorga propiedad de un activo físico" },
+            { "id": "c", "text": "Una mezcla de CapEx y OpEx" },
+            { "id": "d", "text": "No se clasifica en ningún modelo financiero" }
+          ],
+          "correct": ["b"],
+          "explanation": "Aunque el pago sea anticipado, sigue siendo OpEx porque la empresa nunca es dueña del servidor físico; solo paga por el derecho a usar el recurso. Confundir el pago anticipado con CapEx es el distractor más tentador en este concepto."
+        },
+        {
+          "type": "multiple_choice",
+          "subtopic": "BYOL vs. AWS License Included",
+          "section": null,
+          "question": "¿Qué modelo de licenciamiento en AWS es más adecuado para una empresa que no tiene licencias propias y necesita una carga de trabajo temporal de desarrollo?",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "BYOL" },
+            { "id": "b", "text": "AWS License Included" },
+            { "id": "c", "text": "Licencia perpetua on-premises" },
+            { "id": "d", "text": "Software Assurance" }
+          ],
+          "correct": ["b"],
+          "explanation": "AWS License Included es ideal cuando no se tienen licencias propias y la carga es temporal, priorizando simplicidad y agilidad. BYOL requiere licencias propias existentes; las otras opciones no aplican al contexto cloud descrito."
+        },
+        {
+          "type": "multiple_choice",
+          "subtopic": "BYOL vs. AWS License Included",
+          "section": null,
+          "question": "Una empresa migra servidores Windows con licencias existentes (con Software Assurance) a AWS para una carga de larga duración y busca minimizar costos. ¿Qué opción es más adecuada?",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "AWS License Included" },
+            { "id": "b", "text": "BYOL con Dedicated Hosts" },
+            { "id": "c", "text": "BYOL usando License Mobility en instancias compartidas" },
+            { "id": "d", "text": "Usar solo software open source" }
+          ],
+          "correct": ["c"],
+          "explanation": "Con Software Assurance, la empresa puede aprovechar License Mobility para usar sus licencias existentes en instancias compartidas, minimizando costos sin necesidad de Dedicated Hosts. License Included generaría costos recurrentes innecesarios dado que ya posee licencias válidas."
+        },
+        {
+          "type": "multiple_choice",
+          "subtopic": "Rightsizing",
+          "section": null,
+          "question": "¿Qué proceso ajusta continuamente el tamaño de las instancias EC2/RDS para que coincidan con la demanda real de uso?",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "Automation" },
+            { "id": "b", "text": "Rightsizing" },
+            { "id": "c", "text": "Repurchase" },
+            { "id": "d", "text": "Refactor" }
+          ],
+          "correct": ["b"],
+          "explanation": "Rightsizing es el proceso específico de ajustar el tamaño de instancias a la demanda real analizando datos históricos de uso. Automation se refiere a eliminar tareas manuales; Repurchase y Refactor son estrategias de migración, no de optimización de tamaño de instancias."
+        },
+        {
+          "type": "multiple_choice",
+          "subtopic": "Automation",
+          "section": null,
+          "question": "¿Cuál es el principal beneficio de automatizar la configuración y el parcheo de servidores?",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "Reducir el costo de las instancias EC2" },
+            { "id": "b", "text": "Aumentar la consistencia y reducir errores humanos" },
+            { "id": "c", "text": "Aumentar la velocidad de la red" },
+            { "id": "d", "text": "Cumplir automáticamente con regulaciones como GDPR" }
+          ],
+          "correct": ["b"],
+          "explanation": "El principal beneficio de la automatización es la consistencia y la reducción de errores humanos al eliminar tareas manuales repetitivas. No reduce directamente el costo de EC2, ni la velocidad de red, y el cumplimiento normativo no es automático solo por automatizar tareas."
+        },
+        {
+          "type": "multiple_choice",
+          "subtopic": "Scale (Economía de Escala)",
+          "section": null,
+          "question": "¿Cómo puede AWS ofrecer precios más bajos que la mayoría de las empresas que operan su propio centro de datos?",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "Usando exclusivamente software open source" },
+            { "id": "b", "text": "Por el efecto de escala al comprar hardware a granel" },
+            { "id": "c", "text": "Subvencionando el cómputo con otros servicios" },
+            { "id": "d", "text": "Empleando personal no calificado" }
+          ],
+          "correct": ["b"],
+          "explanation": "El efecto de escala permite a AWS negociar mejores precios de hardware al comprar a gran volumen, trasladando ese ahorro al cliente. Las demás opciones no reflejan la razón real detrás de la estructura de precios de AWS."
+        },
+        {
+          "type": "multiple_choice",
+          "subtopic": "AWS Well-Architected Framework",
+          "section": null,
+          "question": "¿Cuál de las siguientes opciones es uno de los seis pilares del AWS Well-Architected Framework?",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "Data Durability" },
+            { "id": "b", "text": "Operational Excellence" },
+            { "id": "c", "text": "Network Performance" },
+            { "id": "d", "text": "Application Integration" }
+          ],
+          "correct": ["b"],
+          "explanation": "Operational Excellence es uno de los 6 pilares oficiales del WAF. Las demás opciones son términos plausibles pero no corresponden a los nombres oficiales de los pilares (que son: Operational Excellence, Security, Reliability, Performance Efficiency, Cost Optimization y Sustainability)."
+        },
+        {
+          "type": "multiple_choice",
+          "subtopic": "AWS Well-Architected Framework",
+          "section": "Operational Excellence",
+          "question": "¿Qué práctica es un ejemplo del pilar de Excelencia Operacional?",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "Usar múltiples Availability Zones" },
+            { "id": "b", "text": "Realizar \"game days\"" },
+            { "id": "c", "text": "Comprar Savings Plans" },
+            { "id": "d", "text": "Cifrar los datos en reposo" }
+          ],
+          "correct": ["b"],
+          "explanation": "Los \"game days\" son simulacros que ayudan a mejorar los procesos operativos, ejemplo clásico de Operational Excellence. Múltiples AZ pertenece a Reliability, Savings Plans a Cost Optimization, y el cifrado de datos a Security."
+        },
+        {
+          "type": "multiple_choice",
+          "subtopic": "AWS Well-Architected Framework",
+          "section": "Security",
+          "question": "Según el pilar de Seguridad del WAF y el modelo de responsabilidad compartida, ¿quién es responsable de cifrar los datos y gestionar IAM?",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "AWS" },
+            { "id": "b", "text": "El cliente" },
+            { "id": "c", "text": "Auditores externos" },
+            { "id": "d", "text": "Se divide siempre 50/50" }
+          ],
+          "correct": ["b"],
+          "explanation": "En el modelo de responsabilidad compartida, el cliente es responsable de la seguridad 'en' la nube, lo que incluye el cifrado de sus datos y la gestión de IAM. AWS es responsable de la seguridad 'de' la nube (infraestructura física)."
+        },
+        {
+          "type": "multiple_choice",
+          "subtopic": "AWS Well-Architected Framework",
+          "section": "Performance Efficiency",
+          "question": "Elegir una arquitectura serverless para eliminar la gestión de servidores y escalar automáticamente responde principalmente al principio de diseño de qué pilar?",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "Cost Optimization" },
+            { "id": "b", "text": "Reliability" },
+            { "id": "c", "text": "Performance Efficiency" },
+            { "id": "d", "text": "Security" }
+          ],
+          "correct": ["c"],
+          "explanation": "Performance Efficiency se enfoca en usar recursos de forma eficiente y mantener esa eficiencia al evolucionar, y serverless es un ejemplo directo de este principio. Aunque puede reducir costos, el enfoque principal de esta decisión es la eficiencia del rendimiento, no el costo."
+        },
+        {
+          "type": "multiple_choice",
+          "subtopic": "AWS Cloud Adoption Framework (CAF)",
+          "section": null,
+          "question": "¿Cuál es la principal diferencia entre el AWS Well-Architected Framework y el AWS Cloud Adoption Framework?",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "CAF se centra en costos, WAF en seguridad" },
+            { "id": "b", "text": "CAF se centra en preparación organizacional y cultural, WAF en diseño técnico" },
+            { "id": "c", "text": "WAF es para empresas grandes, CAF para startups" },
+            { "id": "d", "text": "Son marcos intercambiables" }
+          ],
+          "correct": ["b"],
+          "explanation": "El CAF prepara a la organización a nivel cultural, de personas y procesos antes de migrar, mientras que el WAF evalúa el diseño técnico de las arquitecturas ya construidas o por construir. No son intercambiables ni se limitan por tamaño de empresa."
+        },
+        {
+          "type": "multiple_choice",
+          "subtopic": "AWS Cloud Adoption Framework (CAF)",
+          "section": "People",
+          "question": "La perspectiva de 'Personas' (People) en el CAF se centra en:",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "La elección de servicios de cómputo" },
+            { "id": "b", "text": "La preparación de la fuerza laboral y la gestión del cambio" },
+            { "id": "c", "text": "Los controles de seguridad" },
+            { "id": "d", "text": "La optimización de costos" }
+          ],
+          "correct": ["b"],
+          "explanation": "La perspectiva de Personas del CAF se enfoca en formación, liderazgo y gestión del cambio para preparar a los empleados. La elección de cómputo pertenece a Platform, la seguridad a Security, y la optimización de costos no es una perspectiva del CAF."
+        },
+        {
+          "type": "multiple_choice",
+          "subtopic": "Migration Strategies (The 6 Rs)",
+          "section": null,
+          "question": "Una empresa quiere migrar rápidamente cientos de servidores a AWS sin modificar el código de sus aplicaciones. ¿Qué estrategia de migración debe usar?",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "Replatform" },
+            { "id": "b", "text": "Refactor" },
+            { "id": "c", "text": "Rehost" },
+            { "id": "d", "text": "Repurchase" }
+          ],
+          "correct": ["c"],
+          "explanation": "Rehost (\"lift and shift\") mueve las aplicaciones sin modificarlas, siendo la estrategia más rápida para migraciones masivas. Replatform implica pequeños cambios, Refactor una reescritura completa, y Repurchase un reemplazo por SaaS."
+        },
+        {
+          "type": "multiple_choice",
+          "subtopic": "Migration Strategies (The 6 Rs)",
+          "section": null,
+          "question": "Una empresa decide apagar definitivamente una aplicación interna que ya nadie utiliza, en lugar de migrarla a AWS. ¿Qué estrategia de las 6 Rs está aplicando?",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "Retain" },
+            { "id": "b", "text": "Retire" },
+            { "id": "c", "text": "Repurchase" },
+            { "id": "d", "text": "Replatform" }
+          ],
+          "correct": ["b"],
+          "explanation": "Retire consiste en apagar aplicaciones que ya no se usan, siendo un buen primer paso de 'limpieza' antes de migrar. Retain implica mantener la aplicación on-premises (no apagarla), y las otras opciones no aplican a este escenario."
+        },
+        {
+          "type": "multiple_choice",
+          "subtopic": "AWS Snow Family",
+          "section": null,
+          "question": "Una empresa en una ubicación remota sin conexión a internet estable necesita transferir 80 TB de datos a AWS. ¿Qué servicio debe utilizar?",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "AWS Direct Connect" },
+            { "id": "b", "text": "AWS Snowball" },
+            { "id": "c", "text": "Amazon S3 Transfer Acceleration" },
+            { "id": "d", "text": "AWS VPN" }
+          ],
+          "correct": ["b"],
+          "explanation": "AWS Snowball es el dispositivo físico ideal para transferir grandes volúmenes de datos (decenas de TB a PB) cuando la red no es viable o está limitada. Direct Connect y VPN dependen de la red, y S3 Transfer Acceleration no resuelve la falta de conectividad estable."
+        },
+        {
+          "type": "multiple_response",
+          "subtopic": "On-Premises vs. Cloud Computing",
+          "section": null,
+          "question": "Seleccione TODAS las razones válidas para elegir el modelo Cloud (AWS) sobre on-premises.",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "Demanda variable o impredecible" },
+            { "id": "b", "text": "Necesidad de escalar rápidamente" },
+            { "id": "c", "text": "Se dispone de gran capital para inversión inicial" },
+            { "id": "d", "text": "Preferencia por el modelo de pago por uso (OpEx)" },
+            { "id": "e", "text": "Requisito de control físico total del hardware" }
+          ],
+          "correct": ["a", "b", "d"],
+          "explanation": "Demanda impredecible, necesidad de agilidad y preferencia por OpEx son razones típicas para elegir cloud. Disponer de capital para inversión inicial y requerir control físico total son, en cambio, razones para elegir on-premises."
+        },
+        {
+          "type": "multiple_response",
+          "subtopic": "TCO (Total Cost of Ownership)",
+          "section": null,
+          "question": "Seleccione TODOS los elementos que normalmente se incluyen al calcular el TCO de una infraestructura on-premises.",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "Costo del hardware" },
+            { "id": "b", "text": "Electricidad y refrigeración" },
+            { "id": "c", "text": "Salarios del personal de TI" },
+            { "id": "d", "text": "Licencias de software" },
+            { "id": "e", "text": "Tarifas de egress de datos de AWS" }
+          ],
+          "correct": ["a", "b", "c", "d"],
+          "explanation": "El TCO on-premises incluye hardware, electricidad, personal y licencias. Las tarifas de egress son un costo del modelo cloud, no aplican al cálculo de TCO de una infraestructura propia."
+        },
+        {
+          "type": "multiple_response",
+          "subtopic": "CapEx vs. OpEx",
+          "section": null,
+          "question": "Seleccione TODAS las afirmaciones correctas sobre el modelo OpEx en la nube.",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "Implica pagar solo por lo que se consume" },
+            { "id": "b", "text": "Otorga propiedad total del hardware" },
+            { "id": "c", "text": "Permite escalar rápidamente sin gran inversión inicial" },
+            { "id": "d", "text": "Es el modelo financiero típico de on-premises" },
+            { "id": "e", "text": "El pago anticipado de una instancia reservada sigue siendo OpEx" }
+          ],
+          "correct": ["a", "c", "e"],
+          "explanation": "OpEx significa pagar por consumo y permite escalar sin gran inversión inicial; incluso el pago anticipado de reservadas sigue siendo OpEx porque no otorga propiedad del hardware. Otorgar propiedad y ser el modelo típico de on-premises describen, en cambio, a CapEx."
+        },
+        {
+          "type": "multiple_response",
+          "subtopic": "BYOL vs. AWS License Included",
+          "section": null,
+          "question": "Seleccione TODOS los escenarios en los que conviene usar BYOL (Bring Your Own License) en lugar de AWS License Included.",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "La empresa ya posee licencias con inversión significativa" },
+            { "id": "b", "text": "La carga de trabajo es temporal, de pocos días" },
+            { "id": "c", "text": "Las cargas son estables y a largo plazo" },
+            { "id": "d", "text": "Se busca mantener el cumplimiento de contratos de licencia existentes" },
+            { "id": "e", "text": "No se dispone de ninguna licencia propia" }
+          ],
+          "correct": ["a", "c", "d"],
+          "explanation": "BYOL conviene cuando ya se poseen licencias, las cargas son estables a largo plazo y se busca cumplir contratos existentes. Cargas temporales o la ausencia total de licencias favorecen, en cambio, AWS License Included."
+        },
+        {
+          "type": "multiple_response",
+          "subtopic": "Rightsizing",
+          "section": null,
+          "question": "Seleccione TODAS las herramientas de AWS asociadas directamente al proceso de Rightsizing.",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "AWS Compute Optimizer" },
+            { "id": "b", "text": "AWS Cost Explorer" },
+            { "id": "c", "text": "AWS Snowball" },
+            { "id": "d", "text": "AWS License Manager" },
+            { "id": "e", "text": "Amazon CloudFront" }
+          ],
+          "correct": ["a", "b"],
+          "explanation": "AWS Compute Optimizer y AWS Cost Explorer son las herramientas que dan recomendaciones y análisis de tendencias para el Rightsizing. Snowball es para transferencia de datos, License Manager para licenciamiento, y CloudFront es un servicio de distribución de contenido; ninguno se relaciona con el ajuste de tamaño de instancias."
+        },
+        {
+          "type": "multiple_response",
+          "subtopic": "AWS Well-Architected Framework",
+          "section": null,
+          "question": "Seleccione TODOS los pilares que forman parte del AWS Well-Architected Framework.",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "Operational Excellence" },
+            { "id": "b", "text": "Security" },
+            { "id": "c", "text": "Network Performance" },
+            { "id": "d", "text": "Cost Optimization" },
+            { "id": "e", "text": "Sustainability" },
+            { "id": "f", "text": "Data Redundancy" }
+          ],
+          "correct": ["a", "b", "d", "e"],
+          "explanation": "Los 6 pilares oficiales del WAF son Operational Excellence, Security, Reliability, Performance Efficiency, Cost Optimization y Sustainability. 'Network Performance' y 'Data Redundancy' son nombres plausibles pero no corresponden a pilares oficiales."
+        },
+        {
+          "type": "multiple_response",
+          "subtopic": "AWS Cloud Adoption Framework (CAF)",
+          "section": null,
+          "question": "Seleccione TODAS las perspectivas que forman parte del AWS Cloud Adoption Framework (CAF).",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "Business" },
+            { "id": "b", "text": "People" },
+            { "id": "c", "text": "Governance" },
+            { "id": "d", "text": "Marketing" },
+            { "id": "e", "text": "Platform" },
+            { "id": "f", "text": "Sales" }
+          ],
+          "correct": ["a", "b", "c", "e"],
+          "explanation": "Las 6 perspectivas del CAF son Business, People, Governance, Platform, Security y Operations. 'Marketing' y 'Sales' no forman parte del marco, aunque puedan sonar plausibles en un contexto empresarial."
+        },
+        {
+          "type": "multiple_response",
+          "subtopic": "Migration Strategies (The 6 Rs)",
+          "section": null,
+          "question": "Seleccione TODAS las estrategias que forman parte de 'las 6 Rs' de migración.",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "Rehost" },
+            { "id": "b", "text": "Replatform" },
+            { "id": "c", "text": "Redeploy" },
+            { "id": "d", "text": "Refactor" },
+            { "id": "e", "text": "Repurchase" },
+            { "id": "f", "text": "Retire" }
+          ],
+          "correct": ["a", "b", "d", "e", "f"],
+          "explanation": "Las 6 Rs son: Rehost, Replatform, Refactor/Re-architect, Repurchase, Retain y Retire. 'Redeploy' no es una de las estrategias oficiales, es un distractor plausible por similitud fonética con 'Rehost'/'Replatform'."
+        },
+        {
+          "type": "multiple_response",
+          "subtopic": "Migration Strategies (The 6 Rs)",
+          "section": null,
+          "question": "Seleccione TODAS las afirmaciones correctas sobre la estrategia 'Rehost' (lift and shift).",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "Mueve la aplicación sin realizar cambios significativos" },
+            { "id": "b", "text": "Es generalmente la estrategia más rápida de ejecutar" },
+            { "id": "c", "text": "Aprovecha al máximo las ventajas nativas de la nube" },
+            { "id": "d", "text": "Requiere reescribir la aplicación como microservicios" },
+            { "id": "e", "text": "Es un buen punto de partida cuando se necesita migrar rápidamente muchos servidores" }
+          ],
+          "correct": ["a", "b", "e"],
+          "explanation": "Rehost mueve la aplicación tal cual, sin cambios, siendo rápido de ejecutar y útil para migraciones masivas urgentes. No aprovecha las ventajas nativas de la nube (eso corresponde a Refactor) ni implica reescribir como microservicios."
+        },
+        {
+          "type": "multiple_response",
+          "subtopic": "AWS Snow Family",
+          "section": null,
+          "question": "Seleccione TODAS las afirmaciones correctas sobre la AWS Snow Family.",
+          "image": null,
+          "image_width": null,
+          "options": [
+            { "id": "a", "text": "Snowcone es el dispositivo más pequeño y portátil" },
+            { "id": "b", "text": "Snowmobile se usa para transferencias a escala de exabytes" },
+            { "id": "c", "text": "Se recomienda cuando el ancho de banda de red es insuficiente o costoso" },
+            { "id": "d", "text": "Es un servicio totalmente serverless, sin dispositivo físico" },
+            { "id": "e", "text": "Snowball soporta transferencias de decenas de TB a PB" }
+          ],
+          "correct": ["a", "b", "c", "e"],
+          "explanation": "Snowcone es el más pequeño, Snowmobile transfiere a escala de exabytes, Snowball maneja de TB a PB, y todos se recomiendan cuando la red es insuficiente o costosa. La Snow Family es precisamente un servicio de dispositivos físicos, no serverless."
+        }
+      ]
+    }
+  }

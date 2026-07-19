@@ -15,6 +15,8 @@ import type { PackageIndex, StudyPackage, StudyQuestion, SessionRecord, WeakQues
 
 const LINE_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f43f5e', '#84cc16'];
 
+const fmtScore = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+
 interface ResultsHistoryProps {
   packages: PackageIndex[];
   onStartTest: (questions: StudyQuestion[], label: string, slugs: string[]) => void;
@@ -280,7 +282,7 @@ function SessionsList({ sessions }: { sessions: SessionRecord[] }) {
             <span className={`text-lg font-black w-14 shrink-0 ${scoreColor}`}>{s.score_pct}%</span>
             <div className="flex-1 min-w-0">
               <p className="font-medium text-text truncate">{label}</p>
-              <p className="text-xs text-text-muted">{date} · {s.correct_count}/{s.question_count} correctas · {mins}m {secs}s</p>
+              <p className="text-xs text-text-muted">{date} · {fmtScore(s.correct_count)}/{s.question_count} correctas · {mins}m {secs}s</p>
             </div>
           </div>
         );

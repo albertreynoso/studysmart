@@ -94,6 +94,7 @@ export interface SessionAnswer {
   question_text: string;
   selected: string[];
   is_correct: boolean;
+  score: number; // 0..1: fracción de aciertos (parcial en multi_response/matching)
 }
 
 export interface SessionPayload {

@@ -176,7 +176,7 @@ async function loadExisting(slug: string): Promise<StudyPackage | null> {
   return getPackage(slug).catch(() => null);
 }
 
-export async function ingest(payload: unknown): Promise<IngestResponse> {
+export async function ingest(payload: unknown, onProgress?: (pct: number) => void): Promise<IngestResponse> {
   const p = payload as Dict;
   const errors = validate(p);
   if (errors.length) throw new IngestError(422, { errors });
@@ -205,7 +205,7 @@ export async function ingest(payload: unknown): Promise<IngestResponse> {
     question_count: questionCount,
     folder,
   };
-  await savePackage(index, body);
+  await savePackage(index, body, onProgress);
   return buildResponse(index, counts, questionCount);
 }
 
